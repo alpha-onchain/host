@@ -30,7 +30,18 @@ docker compose up -d
 ```
 
 ## Notes
+
+### Pense-bête
 - This assumes your DNS records already point `traefik.example.com`, `portainer.example.com`, `status.example.com`, and `logs.example.com` to your Raspberry Pi, because Let’s Encrypt HTTP challenge on Traefik needs ports `80/443` reachable from the internet. Traefik’s ACME HTTP challenge and Docker-label routing are both officially supported.
 - `exposedByDefault=false` is important so only explicitly labeled containers are published through Traefik. That is a good default for production.
 - Dozzle and Portainer both need Docker socket access for their core purpose; that is normal for these tools, but it is also why protecting them behind HTTPS and auth is important. Dozzle’s docs explicitly mention proxy-based authentication support.
 
+### Peut-être plus tard
+- Put this stack behind your router with only 80/443 forwarded.
+- Keep Dozzle and Traefik dashboard behind basic auth at minimum.
+- After validation, pin versions more strictly:
+   -  traefik:v3.3.x
+   -  portainer/portainer-ce:lts
+   -  louislam/uptime-kuma:2.x
+   -  amir20/dozzle:x.y.z
+   
