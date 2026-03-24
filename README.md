@@ -12,9 +12,10 @@ newgrp docker
 ```bash
 mkdir /opt/homeserver/stacks/traefik
 mkdir /opt/homeserver/stacks/portainer
-mkdir /opt/homeserver/stacks/ops
+mkdir /opt/homeserver/stacks/uptime-kuma
 mkdir /opt/homeserver/data/traefik
 mkdir /opt/homeserver/data/portainer
+mkdir /opt/homeserver/data/uptime-kuma
 mkdir /opt/homeserver/data/backups
 ```
 
@@ -22,7 +23,6 @@ mkdir /opt/homeserver/data/backups
 ```bash
 build docker compose
 
-mkdir -p traefik/dynamic traefik/letsencrypt portainer/data uptime-kuma/data
 touch traefik/letsencrypt/acme.json
 chmod 600 traefik/letsencrypt/acme.json
 docker compose pull
