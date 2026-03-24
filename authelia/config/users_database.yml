@@ -1,0 +1,7 @@
+users:
+  admin:
+    displayname: "Admin"
+    password: "${AUTHELIA_ADMIN_PASSWORD}"
+    email: "${AUTHELIA_ADMIN_MAIL}"
+    groups:
+      - admins

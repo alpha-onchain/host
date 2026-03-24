@@ -11,8 +11,3 @@ http:
         stsPreload: true
         customRequestHeaders:
           X-Forwarded-Proto: "https"
-
-    admin-auth:
-      basicAuth:
-        users:
-          - "${TRAEFIK_BASIC_AUTH}"
