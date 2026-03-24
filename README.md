@@ -10,10 +10,10 @@ newgrp docker
 ## Build folder structure
 
 ```bash
-mkdir /opt/homeserver/stacks/proxy
+mkdir /opt/homeserver/stacks/traefik
 mkdir /opt/homeserver/stacks/portainer
 mkdir /opt/homeserver/stacks/ops
-mkdir /opt/homeserver/data/proxy
+mkdir /opt/homeserver/data/traefik
 mkdir /opt/homeserver/data/portainer
 mkdir /opt/homeserver/data/backups
 ```
