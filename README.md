@@ -19,3 +19,12 @@ mkdir /opt/homeserver/data/backups
 ```
 
 ## Build Docker stack
+```bash
+build docker compose
+
+mkdir -p traefik/dynamic traefik/letsencrypt portainer/data uptime-kuma/data
+touch traefik/letsencrypt/acme.json
+chmod 600 traefik/letsencrypt/acme.json
+docker compose pull
+docker compose up -d
+```
