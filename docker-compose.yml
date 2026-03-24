@@ -37,8 +37,8 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/letsencrypt:/letsencrypt
-      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./stacks/traefik/letsencrypt:/letsencrypt
+      - ./stacks/traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
       - proxy
     labels:
@@ -60,7 +60,7 @@ services:
     command: -H unix:///var/run/docker.sock
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./portainer/data:/data
+      - ./data/portainer:/data
     networks:
       - proxy
     labels:
@@ -78,7 +78,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - ./uptime-kuma/data:/app/data
+      - ./data/uptime-kuma:/app/data
     networks:
       - proxy
     labels:
