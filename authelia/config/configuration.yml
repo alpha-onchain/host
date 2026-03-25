@@ -18,26 +18,26 @@ access_control:
   default_policy: deny
   rules:
     - domain:
-        - auth.example.com
+        - "${AUTHELIA_HOST}"
       policy: bypass
 
     - domain:
-        - traefik.example.com
-        - portainer.example.com
-        - status.example.com
-        - logs.example.com
+        - "${TRAEFIK_DASHBOARD_HOST}"
+        - "${PORTAINER_HOST}"
+        - "${UPTIME_KUMA_HOST}"
+        - "${DOZZLE_HOST}"
       policy: one_factor
 
 session:
   name: authelia_session
-  secret: "CHANGE_THIS_LONG_RANDOM_SESSION_SECRET"
+  secret: "${AUTHELIA_SESSION_SECRET}"
   expiration: 1h
   inactivity: 5m
   remember_me: 1M
   cookies:
-    - domain: example.com
-      authelia_url: https://auth.example.com
-      default_redirection_url: https://portainer.example.com
+    - domain: "${DOMAIN}"
+      authelia_url: "https://${AUTHELIA_HOST}"
+      default_redirection_url: "https://${portainer.nadda.net}"
 
 storage:
   local:

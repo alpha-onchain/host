@@ -55,23 +55,13 @@ docker compose -f stacks/ops/docker-compose.yml up -d
 
 ## First start
 
-### In configuration.yml, replace:
-
-- `auth.example.com`
-- `traefik.example.com`
-- `portainer.example.com`
-- `status.example.com`
-- `logs.example.com`
-- `example.com`
-
-### Run
-#### Test locally
+### Test locally
 - Run `docker compose up -d`
 - Check http://localhost:9000 (Portainer)
 - Check http://localhost:3001 (Uptime Kuma)
 - Check proxy routing
 
-#### On server
+### On server
 ```bash
 build docker compose
 
