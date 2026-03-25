@@ -70,6 +70,7 @@ services:
       APP_DOZZLE_HOST: ${DOZZLE_HOST}
       APP_PORTAINER_HOST: ${PORTAINER_HOST}
       APP_UPTIME_KUMA_HOST: ${UPTIME_KUMA_HOST}
+      APP_AOC_PUBLISHER_HOST: ${AOC_PUBLISHER_HOST}
       APP_TRAEFIK_DASHBOARD_HOST: ${TRAEFIK_DASHBOARD_HOST}
       AUTH_DOMAIN: ${DOMAIN}
     networks:
@@ -124,6 +125,32 @@ services:
       - traefik.http.routers.uptime-kuma.tls.certresolver=letsencrypt
       - traefik.http.routers.uptime-kuma.middlewares=security-headers@file,authelia@docker
       - traefik.http.services.uptime-kuma.loadbalancer.server.port=3001
+
+  aoc-publisher:
+    build: ./aoc-publisher
+    container_name: aoc-publisher
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PORT: 3001
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
+      TG_BOT_ADMINISTRATOR_GROUP_ID: ${TG_BOT_ADMINISTRATOR_GROUP_ID}
+      TG_BOT_API_ID: ${TG_BOT_API_ID}
+      TG_BOT_API_HASH: ${TG_BOT_API_HASH}
+      TG_PUBLISHER_USER_NAME: ${TG_PUBLISHER_USER_NAME}
+      DATA_DIRECTORY_PATH: ${DATA_DIRECTORY_PATH}
+    volumes:
+      - ./aoc-publisher/data:/app/data
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.aoc-publisher.rule=Host(`${AOC_PUBLISHER_HOST}`)
+      - traefik.http.routers.aoc-publisher.entrypoints=websecure
+      - traefik.http.routers.aoc-publisher.tls.certresolver=letsencrypt
+      - traefik.http.routers.aoc-publisher.middlewares=security-headers@file,authelia@docker
+      - traefik.http.services.aoc-publisher.loadbalancer.server.port=3001
 
   dozzle:
     image: amir20/dozzle:v8

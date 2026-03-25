@@ -26,6 +26,7 @@ access_control:
         - '{{ env "APP_PORTAINER_HOST" }}'
         - '{{ env "APP_UPTIME_KUMA_HOST" }}'
         - '{{ env "APP_DOZZLE_HOST" }}'
+        - '{{ env "APP_AOC_PUBLISHER_HOST" }}'
       policy: one_factor
 
 session:
