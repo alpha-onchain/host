@@ -1,1 +1,5 @@
 .env
+data/portainer/*
+authelia/config/notification.txt
+authelia/config/db.sqlite3
+traefik/letsencrypt/acme.json

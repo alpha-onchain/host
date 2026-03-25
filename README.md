@@ -6,7 +6,18 @@ setup ssh access
 
 # Host
 
+## Generate SSH key to pull code from Github
 
+- Generate key : `ssh-keygen -t ed25519 -C "me@nadda.net"`
+- Check key (private & public) : `ls ~/.ssh`
+- Start ssh agent to use this key at each git request : `eval "$(ssh-agent -s)"`
+- Add key to ssh agent `ssh-add ~/.ssh/<<id_XXXXXXX>>`
+- Copy public key `cat ~/.ssh/<<id_XXXXXXX>>.pub`
+- Copy public key to github https://github.com/settings/keys
+  1. Click "New SSH key"
+  1. Title: e.g. raspberry-pi or laptop
+  1. Paste your key
+  1. Click Add SSH key
 
 ## Setup with Raspberry imager
 ## Target
@@ -77,10 +88,11 @@ docker compose up -d
 - This assumes your DNS records already point `traefik.example.com`, `portainer.example.com`, `status.example.com`, and `logs.example.com` to your Raspberry Pi, because Let’s Encrypt HTTP challenge on Traefik needs ports `80/443` reachable from the internet. Traefik’s ACME HTTP challenge and Docker-label routing are both officially supported.
 - `exposedByDefault=false` is important so only explicitly labeled containers are published through Traefik. That is a good default for production.
 - Dozzle and Portainer both need Docker socket access for their core purpose; that is normal for these tools, but it is also why protecting them behind HTTPS and auth is important. Dozzle’s docs explicitly mention proxy-based authentication support.
-- Password admin for Authelia was generated with `docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'CHANGE_ME'`
+- Password admin for Authelia was generated with `docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'CHANGE_ME_3'`
 - Long random secrets & jwt was generated with `openssl rand -hex 64`
 - backup strategy
 
+<blockquote class="danger">⚠️ Change password of admin user the first time you use Authelia.</blockquote>
 <blockquote class="danger">⚠️ Do not publish extra ports for Portainer, Dozzle or any app.</blockquote>
 <blockquote class="danger">⚠️ Always use images that suport arm64 (and not only amd64)</blockquote>
 <blockquote class="danger">⚠️ Only Traefik should expose 80 & 443
@@ -102,4 +114,8 @@ If we build custom apps, we must
   -  `portainer/portainer-ce:lts`
   -  `louislam/uptime-kuma:2.x`
   -  `amir20/dozzle:x.y.z`
-   
+
+# debug
+- Check traefik logs : `docker logs traefik --tail 20`
+- Get back permissions on configuration files : `sudo chown -R azureuser:azureuser /home/azureuser/host/authelia/config/`
+- If portainer has a timeout at conf, just restart the container : `docker restart portainer`

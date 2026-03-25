@@ -37,8 +37,8 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /opt/homeserver/stacks/traefik/letsencrypt:/letsencrypt
-      - /opt/homeserver/stacks/traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./traefik/letsencrypt:/letsencrypt
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
       - proxy
     labels:
@@ -58,9 +58,20 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - /opt/homeserver/stacks/authelia/config:/config
+      - ./authelia/config:/config
     environment:
-      TZ: Europe/Paris
+      TZ: ${TZ}
+      X_AUTHELIA_CONFIG_FILTERS: template
+      AUTH_ADMIN_PASSWORD: ${AUTHELIA_ADMIN_PASSWORD}
+      AUTH_JWT_SECRET: ${AUTHELIA_JWT_SECRET}
+      AUTH_SESSION_SECRET: ${AUTHELIA_SESSION_SECRET}
+      AUTH_STORAGE_ENCRYPTION_KEY: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
+      AUTH_HOST: ${AUTHELIA_HOST}
+      APP_DOZZLE_HOST: ${DOZZLE_HOST}
+      APP_PORTAINER_HOST: ${PORTAINER_HOST}
+      APP_UPTIME_KUMA_HOST: ${UPTIME_KUMA_HOST}
+      APP_TRAEFIK_DASHBOARD_HOST: ${TRAEFIK_DASHBOARD_HOST}
+      AUTH_DOMAIN: ${DOMAIN}
     networks:
       - proxy
     labels:
@@ -85,7 +96,7 @@ services:
     command: -H unix:///var/run/docker.sock
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /opt/homeserver/data/portainer:/data
+      - ./data/portainer:/data
     networks:
       - proxy
     labels:
@@ -103,7 +114,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - /opt/homeserver/data/uptime-kuma:/app/data
+      - ./data/uptime-kuma:/app/data
     networks:
       - proxy
     labels:
