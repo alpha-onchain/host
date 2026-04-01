@@ -140,6 +140,7 @@ services:
       TG_BOT_API_HASH: ${TG_BOT_API_HASH}
       TG_PUBLISHER_USER_NAME: ${TG_PUBLISHER_USER_NAME}
       DATA_DIRECTORY_PATH: ${DATA_DIRECTORY_PATH}
+      DATABASE_URL: ${DATABASE_URL}
     volumes:
       - ./aoc-publisher/data:/app/data
     networks:
@@ -151,7 +152,7 @@ services:
       - traefik.http.routers.aoc-publisher.tls.certresolver=letsencrypt
       - traefik.http.routers.aoc-publisher.middlewares=security-headers@file,authelia@docker
       - traefik.http.services.aoc-publisher.loadbalancer.server.port=3001
-
+  
   dozzle:
     image: amir20/dozzle:v8
     container_name: dozzle

@@ -1,9 +1,0 @@
-users:
-  admin:
-    displayname: "Admin"
-    # First password to change
-    password: "$argon2id$v=19$m=65536,t=3,p=4$+YU5sd5j+V1zM/g11/y8tg$5BNLS7xSzL3DiJn6xdyeRlWpiltmO7Tajcj+IxIYxoc"
-    email: "admin@nadda.net"
-    groups:
-      - admins
-      - dev
