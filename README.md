@@ -23,18 +23,18 @@ setup ssh access
 ## Target
 - Resources
   - Traefik as reverse proxy
-  - Authelia as SSO / access gateway
+  - Authentik as SSO / access gateway
   - Portainer
   - Uptime Kuma
   - Dozzle
-  - protection through Authelia forward auth
+  - protection through Authentik forward auth
 
 - Production-oriented but still realistic for Raspberry Pi
   - persistent volumes
   - no insecure Traefik API
   - Docker provider with exposedByDefault=false
   - TLS via Let’s Encrypt
-  - Authelia with file-based users for simplicity
+  - Authentik with Google login and forward auth
 
 ## Install Docker + Compose
 ```bash
@@ -85,14 +85,21 @@ docker compose up -d
 ## Notes
 
 ### Pense-bête
+- Configure portainer connexion : https://integrations.goauthentik.io/hypervisors-orchestrators/portainer/
 - This assumes your DNS records already point `traefik.example.com`, `portainer.example.com`, `status.example.com`, and `logs.example.com` to your Raspberry Pi, because Let’s Encrypt HTTP challenge on Traefik needs ports `80/443` reachable from the internet. Traefik’s ACME HTTP challenge and Docker-label routing are both officially supported.
 - `exposedByDefault=false` is important so only explicitly labeled containers are published through Traefik. That is a good default for production.
 - Dozzle and Portainer both need Docker socket access for their core purpose; that is normal for these tools, but it is also why protecting them behind HTTPS and auth is important. Dozzle’s docs explicitly mention proxy-based authentication support.
-- Password admin for Authelia was generated with `docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'CHANGE_ME_3'`
-- Long random secrets & jwt was generated with `openssl rand -hex 64`
+- Authentik bootstrap password is set with `AUTHENTIK_BOOTSTRAP_PASSWORD` and is only read on the first startup
+- Authentik secret key can be generated with `openssl rand -base64 60 | tr -d '\n'`
+- Authentik PostgreSQL password can be generated with `openssl rand -base64 36 | tr -d '\n'`
+- Google SSO setup (Google Cloud + Authentik):
+  1. In Google Cloud Console, create an OAuth client (Web application).
+  2. Set the redirect URI to `https://auth-lab.nadda.net/source/oauth/callback/google/`.
+  3. In Authentik admin, go to Directory -> Federation and social login -> OAuth Sources -> Create -> Google.
+  4. Use values from `.env`: `OIDC_GOOGLE_CLIENT_ID` and `OIDC_GOOGLE_CLIENT_SECRET`.
+  5. In the source, enable display on login page and use scopes `openid profile email`.
+  6. Test at `https://auth-lab.nadda.net/if/flow/default-authentication-flow/` and click Continue with Google.
 - backup strategy
-
-<blockquote class="danger">⚠️ Change password of admin user the first time you use Authelia.</blockquote>
 <blockquote class="danger">⚠️ Do not publish extra ports for Portainer, Dozzle or any app.</blockquote>
 <blockquote class="danger">⚠️ Always use images that suport arm64 (and not only amd64)</blockquote>
 <blockquote class="danger">⚠️ Only Traefik should expose 80 & 443
@@ -105,9 +112,9 @@ If we build custom apps, we must
 ### Peut-être plus tard
 - Put this stack behind your router with only 80/443 forwarded.
 - Keep Dozzle and Traefik dashboard behind basic auth at minimum.
-- Change `policy: one_factor` to `policy: two_factor` and then enable TOTP/WebAuthn in Authelia
-- put Portainer and Dozzle behind two_factor
-- keep Uptime Kuma in one_factor
+- Configure Google as a social login source in Authentik
+- Create proxy providers and applications for Dozzle, Uptime Kuma, and AOC Publisher
+- Raise assurance later with MFA policies in Authentik
 - add CrowdSec later if you expose this publicly
 - After validation, pin versions more strictly:
   -  `traefik:v3.3.x`
@@ -117,5 +124,5 @@ If we build custom apps, we must
 
 # debug
 - Check traefik logs : `docker logs traefik --tail 20`
-- Get back permissions on configuration files : `sudo chown -R azureuser:azureuser /home/azureuser/host/authelia/config/`
+- First Authentik setup is on `https://auth-lab.nadda.net/if/flow/initial-setup/` unless you rely on the bootstrap admin password
 - If portainer has a timeout at conf, just restart the container : `docker restart portainer`

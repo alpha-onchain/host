@@ -44,49 +44,97 @@ services:
     labels:
       - traefik.enable=true
 
-      # Traefik dashboard protected by Authelia
+      # Traefik dashboard protected by Authentik
       - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_DASHBOARD_HOST}`)
       - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.tls.certresolver=letsencrypt
       - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.routers.traefik.middlewares=security-headers@file,authelia@docker
+      - traefik.http.routers.traefik.middlewares=security-headers@file,authentik@file
 
-  authelia:
-    image: authelia/authelia:latest
-    container_name: authelia
+  postgresql:
+    image: postgres:16-alpine
+    container_name: authentik-postgresql
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    volumes:
-      - ./authelia/config:/config
     environment:
-      TZ: ${TZ}
-      X_AUTHELIA_CONFIG_FILTERS: template
-      AUTH_ADMIN_PASSWORD: ${AUTHELIA_ADMIN_PASSWORD}
-      AUTH_JWT_SECRET: ${AUTHELIA_JWT_SECRET}
-      AUTH_SESSION_SECRET: ${AUTHELIA_SESSION_SECRET}
-      AUTH_STORAGE_ENCRYPTION_KEY: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
-      AUTH_HOST: ${AUTHELIA_HOST}
-      APP_DOZZLE_HOST: ${DOZZLE_HOST}
-      APP_PORTAINER_HOST: ${PORTAINER_HOST}
-      APP_UPTIME_KUMA_HOST: ${UPTIME_KUMA_HOST}
-      APP_AOC_PUBLISHER_HOST: ${AOC_PUBLISHER_HOST}
-      APP_TRAEFIK_DASHBOARD_HOST: ${TRAEFIK_DASHBOARD_HOST}
-      AUTH_DOMAIN: ${DOMAIN}
+      POSTGRES_DB: ${PG_DB}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - authentik-database:/var/lib/postgresql/data
+    networks:
+      - proxy
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2025.10
+    container_name: authentik-server
+    command: server
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_LOG_LEVEL: info
+      AUTHENTIK_COOKIE_DOMAIN: .${DOMAIN}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB}
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+      AUTHENTIK_POSTGRESQL__SSLMODE: disable
+    volumes:
+      - ./authentik/data:/data
     networks:
       - proxy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.authelia.rule=Host(`${AUTHELIA_HOST}`)
-      - traefik.http.routers.authelia.entrypoints=websecure
-      - traefik.http.routers.authelia.tls.certresolver=letsencrypt
-      - traefik.http.routers.authelia.middlewares=security-headers@file
-      - traefik.http.services.authelia.loadbalancer.server.port=9091
+      - traefik.http.services.authentik.loadbalancer.server.port=9000
+      - traefik.http.routers.authentik.rule=Host(`${AUTH_HOST}`)
+      - traefik.http.routers.authentik.entrypoints=websecure
+      - traefik.http.routers.authentik.tls.certresolver=letsencrypt
+      - traefik.http.routers.authentik.middlewares=security-headers@file
+      - traefik.http.routers.authentik.service=authentik
+      - traefik.http.routers.authentik-outpost.rule=PathPrefix(`/outpost.goauthentik.io/`)
+      - traefik.http.routers.authentik-outpost.entrypoints=websecure
+      - traefik.http.routers.authentik-outpost.tls.certresolver=letsencrypt
+      - traefik.http.routers.authentik-outpost.priority=100
+      - traefik.http.routers.authentik-outpost.service=authentik
 
-      # ForwardAuth middleware exposed to other containers
-      - traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/authz/forward-auth
-      - traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true
-      - traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2025.10
+    container_name: authentik-worker
+    command: worker
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_LOG_LEVEL: info
+      AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB}
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+      AUTHENTIK_POSTGRESQL__SSLMODE: disable
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD}
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL}
+    volumes:
+      - ./authentik/data:/data
+    networks:
+      - proxy
 
   portainer:
     image: portainer/portainer-ce:lts
@@ -105,7 +153,7 @@ services:
       - traefik.http.routers.portainer.rule=Host(`${PORTAINER_HOST}`)
       - traefik.http.routers.portainer.entrypoints=websecure
       - traefik.http.routers.portainer.tls.certresolver=letsencrypt
-      - traefik.http.routers.portainer.middlewares=security-headers@file,authelia@docker
+      - traefik.http.routers.portainer.middlewares=security-headers@file
       - traefik.http.services.portainer.loadbalancer.server.port=9000
 
   uptime-kuma:
@@ -123,7 +171,7 @@ services:
       - traefik.http.routers.uptime-kuma.rule=Host(`${UPTIME_KUMA_HOST}`)
       - traefik.http.routers.uptime-kuma.entrypoints=websecure
       - traefik.http.routers.uptime-kuma.tls.certresolver=letsencrypt
-      - traefik.http.routers.uptime-kuma.middlewares=security-headers@file,authelia@docker
+      - traefik.http.routers.uptime-kuma.middlewares=security-headers@file,authentik@file
       - traefik.http.services.uptime-kuma.loadbalancer.server.port=3001
 
   aoc-publisher:
@@ -150,9 +198,9 @@ services:
       - traefik.http.routers.aoc-publisher.rule=Host(`${AOC_PUBLISHER_HOST}`)
       - traefik.http.routers.aoc-publisher.entrypoints=websecure
       - traefik.http.routers.aoc-publisher.tls.certresolver=letsencrypt
-      - traefik.http.routers.aoc-publisher.middlewares=security-headers@file,authelia@docker
+      - traefik.http.routers.aoc-publisher.middlewares=security-headers@file,authentik@file
       - traefik.http.services.aoc-publisher.loadbalancer.server.port=3001
-  
+
   dozzle:
     image: amir20/dozzle:v8
     container_name: dozzle
@@ -172,9 +220,12 @@ services:
       - traefik.http.routers.dozzle.rule=Host(`${DOZZLE_HOST}`)
       - traefik.http.routers.dozzle.entrypoints=websecure
       - traefik.http.routers.dozzle.tls.certresolver=letsencrypt
-      - traefik.http.routers.dozzle.middlewares=security-headers@file,authelia@docker
+      - traefik.http.routers.dozzle.middlewares=security-headers@file,authentik@file
       - traefik.http.services.dozzle.loadbalancer.server.port=8080
 
 networks:
   proxy:
     name: proxy
+
+volumes:
+  authentik-database:
