@@ -72,6 +72,20 @@ services:
     networks:
       - proxy
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - proxy
+
   authentik-server:
     image: ghcr.io/goauthentik/server:2025.10
     container_name: authentik-server
@@ -85,7 +99,6 @@ services:
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
       AUTHENTIK_LOG_LEVEL: info
-      AUTHENTIK_COOKIE_DOMAIN: .${DOMAIN}
       AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
       AUTHENTIK_POSTGRESQL__HOST: postgresql
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB}
@@ -99,7 +112,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.authentik.loadbalancer.server.port=9000
-      - traefik.http.routers.authentik.rule=Host(`${AUTH_HOST}`)
+      - traefik.http.routers.authentik.rule=Host(`${AUTH_HOST}`) || Host(`${AUTH_HOST_AOC_PORTAL}`)
       - traefik.http.routers.authentik.entrypoints=websecure
       - traefik.http.routers.authentik.tls.certresolver=letsencrypt
       - traefik.http.routers.authentik.middlewares=security-headers@file
@@ -174,6 +187,31 @@ services:
       - traefik.http.routers.uptime-kuma.middlewares=security-headers@file,authentik@file
       - traefik.http.services.uptime-kuma.loadbalancer.server.port=3001
 
+  aoc-portal:
+    build: ./aoc-portal
+    container_name: aoc-portal
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PORT: 3002
+      AOC_HOST: ${AOC_PORTAL_HOST}
+      USER_ADMIN_GROUP: ${AOC_USER_ADMIN_GROUP}
+      AUTHENTIK_HOST: ${AUTH_HOST_AOC_PORTAL}
+      DATA_DIRECTORY_PATH: ${DATA_DIRECTORY_PATH}
+      DATABASE_URL: ${AOC_PORTAL_DATABASE_URL}
+    volumes:
+      - ./aoc-portal/data:/app/data
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.aoc-portal.rule=Host(`${AOC_PORTAL_HOST}`)
+      - traefik.http.routers.aoc-portal.entrypoints=websecure
+      - traefik.http.routers.aoc-portal.tls.certresolver=letsencrypt
+      - traefik.http.routers.aoc-portal.middlewares=security-headers@file,authentik@file
+      - traefik.http.services.aoc-portal.loadbalancer.server.port=3002
+
   aoc-publisher:
     build: ./aoc-publisher
     container_name: aoc-publisher
@@ -188,7 +226,11 @@ services:
       TG_BOT_API_HASH: ${TG_BOT_API_HASH}
       TG_PUBLISHER_USER_NAME: ${TG_PUBLISHER_USER_NAME}
       DATA_DIRECTORY_PATH: ${DATA_DIRECTORY_PATH}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${AOC_DATABASE_URL}
+      AOC_HOST: ${AOC_PUBLISHER_HOST}
+      USER_ADMIN_GROUP: ${AOC_USER_ADMIN_GROUP}
+      AUTHENTIK_HOST: ${AUTH_HOST}
+      REDIS_URL: ${REDIS_URL}
     volumes:
       - ./aoc-publisher/data:/app/data
     networks:
@@ -229,3 +271,4 @@ networks:
 
 volumes:
   authentik-database:
+  redis-data:

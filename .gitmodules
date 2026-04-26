@@ -1,3 +1,6 @@
 [submodule "aoc-publisher"]
 	path = aoc-publisher
 	url = git@github.com:alpha-onchain/publisher.git
+[submodule "aoc-portal"]
+	path = aoc-portal
+	url = git@github.com:alpha-onchain/portal.git
